@@ -2297,13 +2297,24 @@ static inline void srv_return_page(struct session *t) {
 	hlen  = 0;
 
 	//hlen += snprintf(t->rep->data + hlen, BUFSIZE - hlen, "HTTP/1.1 %03d\r\n", t->req_code);
-	memcpy(t->rep->data + hlen, "HTTP/1.1 000\r\n", 14);
+	memcpy(t->rep->data + hlen, "HTTP/1.1 000 ", 13);
 	if (!(t->ka & 4)) // HTTP/1.0
 	    t->rep->data[hlen+ 7] = '0';
 	t->rep->data[hlen+ 9] = ((t->req_code / 100) % 10) + '0';
 	t->rep->data[hlen+10] = ((t->req_code /  10) % 10) + '0';
 	t->rep->data[hlen+11] = ((t->req_code /   1) % 10) + '0';
-	hlen += 14;
+	hlen += 13;
+
+	if (t->ka & 4) {
+	    switch(t->req_code) {
+	    case 200:
+	        memcpy(t->rep->data + hlen, "OK", 2);
+	        hlen += 2;
+	        break;
+	    }
+	}
+	memcpy(t->rep->data + hlen, "\r\n", 2);
+	hlen += 2;
 
 	if ((t->ka & 5) == 1) { // HTTP/1.0 + KA
 	    memcpy(t->rep->data + hlen, "Connection: keep-alive\r\n", 24);
